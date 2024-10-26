@@ -1,0 +1,13 @@
+{
+    "columns": [
+      { "name": "id", "type": "integer" },
+      { "name": "first_name", "type": "first_name" },
+      { "name": "last_name", "type": "last_name" },
+      { "name": "email", "type": "email" },
+      { "name": "phone_number", "type": "phone_number" },
+      { "name": "age", "type": "integer" },
+      { "name": "bio", "type": "sentence" },
+      { "name": "is_active", "type": "boolean" }
+    ]
+  }
+  
