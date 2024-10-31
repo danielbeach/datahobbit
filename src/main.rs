@@ -18,12 +18,27 @@ struct Cli {
     /// Sets the number of records to generate
     #[arg(short, long)]
     records: usize,
+
+    /// Sets the delimiter to use in the CSV file (default is ',')
+    #[arg(short, long, default_value = ",")]
+    delimiter: char,
 }
 
 fn main() {
     let args = Cli::parse();
 
-    if let Err(e) = generate_csv(&args.input, &args.output, args.records) {
+    // Ensure the delimiter is a single-byte character
+    if args.delimiter.len_utf8() != 1 {
+        eprintln!("Error: Delimiter must be a single ASCII character.");
+        std::process::exit(1);
+    }
+
+    if let Err(e) = generate_csv(
+        &args.input,
+        &args.output,
+        args.records,
+        args.delimiter as u8,
+    ) {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }

@@ -12,3 +12,4 @@ fake = { version = "2.10.0", features = ["derive"] }
 rayon = "1.7"
 rand = "0.8"
 anyhow = "1.0.91"
+indicatif = "0.17.8"
