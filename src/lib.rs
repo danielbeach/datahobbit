@@ -13,6 +13,12 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::sync::{Arc, Mutex};
+use arrow::array::{ArrayRef, BooleanArray, Float64Array, Int64Array, StringArray};
+use arrow::record_batch::RecordBatch;
+use parquet::arrow::arrow_writer::ArrowWriter;
+use parquet::file::properties::WriterProperties;
+use parquet::file::writer::SerializedFileWriter;
+use parquet::schema::types::Type;
 
 #[derive(Deserialize)]
 struct Schema {
@@ -42,6 +48,58 @@ fn get_generator(data_type: &str) -> Result<Box<dyn Fn() -> String + Send + Sync
         _ => Err(anyhow!("Unsupported data type: {}", data_type)),
     }
 }
+
+pub fn generate_parquet(input_file: &str, output_file: &str, records: usize) -> Result<()> {
+    let file = File::open(input_file)?;
+    let reader = std::io::BufReader::new(file);
+    let schema: Schema = serde_json::from_reader(reader)?;
+
+    let arrow_fields = schema.columns.iter()
+        .map(|col| match col.data_type.as_str() {
+            "integer" => Ok(arrow::datatypes::Field::new(&col.name, arrow::datatypes::DataType::Int64, false)),
+            "float" => Ok(arrow::datatypes::Field::new(&col.name, arrow::datatypes::DataType::Float64, false)),
+            "boolean" => Ok(arrow::datatypes::Field::new(&col.name, arrow::datatypes::DataType::Boolean, false)),
+            "string" | "name" | "first_name" | "last_name" | "email" | "password" | "sentence" | "phone_number" => 
+                Ok(arrow::datatypes::Field::new(&col.name, arrow::datatypes::DataType::Utf8, false)),
+            _ => Err(anyhow!("Unsupported data type for Parquet: {}", col.data_type)),
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    let arrow_schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
+    let file = File::create(output_file)?;
+    let buf_writer = BufWriter::new(file);
+    let writer_props = WriterProperties::builder().build();
+    let mut writer = ArrowWriter::try_new(buf_writer, arrow_schema.clone(), Some(writer_props))?;
+
+    let generators: Vec<_> = schema.columns.iter()
+        .map(|column| get_generator(&column.data_type))
+        .collect::<Result<_>>()?;
+
+    let mut batches = Vec::new();
+
+    for _ in 0..records {
+        let row: Vec<String> = generators.iter().map(|gen| gen()).collect();
+        let columns: Vec<ArrayRef> = row.iter().enumerate().map(|(i, value)| {
+            match schema.columns[i].data_type.as_str() {
+                "integer" => Arc::new(Int64Array::from(vec![value.parse::<i64>().unwrap()])) as ArrayRef,
+                "float" => Arc::new(Float64Array::from(vec![value.parse::<f64>().unwrap()])) as ArrayRef,
+                "boolean" => Arc::new(BooleanArray::from(vec![value == "true"])) as ArrayRef,
+                _ => Arc::new(StringArray::from(vec![value.to_string()])) as ArrayRef,
+            }
+        }).collect();
+
+        let batch = RecordBatch::try_new(arrow_schema.clone(), columns)?;
+        batches.push(batch);
+    }
+
+    for batch in batches {
+        writer.write(&batch)?;
+    }
+
+    writer.close()?;
+    Ok(())
+}
+
 
 pub fn generate_csv(
     input_file: &str,

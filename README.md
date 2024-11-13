@@ -1,7 +1,10 @@
+Here's an updated version of the README to include Parquet support:
 
-# datahobbit - CSV Generator
+---
 
-A Rust command-line tool that generates CSV files with synthetic data based on a provided JSON schema. It supports custom delimiters, displays a progress bar during generation, and efficiently handles large datasets using parallel processing.
+# datahobbit - CSV or Parquet Generator
+
+A Rust command-line tool that generates CSV or Parquet files with synthetic data based on a provided JSON schema. It supports custom delimiters for CSV, displays a progress bar during generation, and efficiently handles large datasets using parallel processing.
 
 ## Table of Contents
 
@@ -17,22 +20,23 @@ A Rust command-line tool that generates CSV files with synthetic data based on a
 
 ## Features
 
-- **Flexible Schema Definition**: Define your CSV structure using a JSON schema file.
+- **Flexible Schema Definition**: Define your data structure using a JSON schema file.
 - **Synthetic Data Generation**: Generates realistic data for various data types.
+- **CSV and Parquet Support**: Output data in CSV or Parquet format.
 - **Parallel Processing**: Utilizes multi-threading for fast data generation.
-- **Custom Delimiters**: Supports optional delimiters, defaulting to a comma.
+- **Custom Delimiters**: Supports optional delimiters for CSV, defaulting to a comma.
 - **Progress Indicator**: Displays a progress bar during data generation.
 - **Error Handling**: Provides clear error messages for unsupported data types or invalid input.
 
 ## Installation
 
-To build and run the CSV Generator, you need to have [Rust](https://www.rust-lang.org/tools/install) installed on your system.
+To build and run the CSV and Parquet Generator, you need to have [Rust](https://www.rust-lang.org/tools/install) installed on your system.
 
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/csv_generator.git
-   cd csv_generator
+   git clone https://github.com/yourusername/datahobbit.git
+   cd datahobbit
    ```
 
 2. **Build the Project**
@@ -51,22 +55,23 @@ Run the executable with the following options:
 
 ```bash
 USAGE:
-    csv_generator [OPTIONS] <input> <output>
+    datahobbit [OPTIONS] <input> <output>
 
 ARGS:
     <input>     Sets the input JSON schema file
-    <output>    Sets the output CSV file
+    <output>    Sets the output file (either .csv or .parquet)
 
 OPTIONS:
     -d, --delimiter <DELIMITER>    Sets the delimiter to use in the CSV file (default is ',')
     -h, --help                     Print help information
     -r, --records <RECORDS>        Sets the number of records to generate
+    --format <FORMAT>              Sets the output format: either "csv" or "parquet" (default is "csv")
     -V, --version                  Print version information
 ```
 
 ### Schema Definition
 
-The JSON schema defines the structure of the CSV file, including column names and data types. Here is an example schema:
+The JSON schema defines the structure of the output file, including column names and data types. Here is an example schema:
 
 ```json
 {
@@ -88,11 +93,20 @@ The JSON schema defines the structure of the CSV file, including column names an
 **Generate a CSV with Default Settings**
 
 ```bash
-cargo run -- input_schema.json output.csv --records 100000
+cargo run -- schema.json output.csv --records 100000
 ```
 
 - Generates 100,000 records.
 - Uses the default comma delimiter.
+
+**Generate a Parquet File**
+
+```bash
+cargo run -- schema.json output.parquet --records 100000 --format parquet
+```
+
+- Generates 100,000 records.
+- Outputs data in Parquet format.
 
 **Generate a CSV with a Custom Delimiter**
 
@@ -133,42 +147,6 @@ The following data types are supported in the schema:
 { "name": "is_verified", "type": "boolean" }
 ```
 
-## Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. **Fork the Repository**
-
-   Click the "Fork" button at the top right of the repository page.
-
-2. **Clone Your Fork**
-
-   ```bash
-   git clone https://github.com/yourusername/csv_generator.git
-   cd csv_generator
-   ```
-
-3. **Create a New Branch**
-
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-4. **Make Changes and Commit**
-
-   ```bash
-   git commit -am "Add your feature"
-   ```
-
-5. **Push to Your Fork**
-
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-6. **Create a Pull Request**
-
-   Go to the original repository and click "New Pull Request".
 
 ## License
 
@@ -182,4 +160,3 @@ This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-Feel free to open an issue or submit a pull request if you find any bugs or have suggestions for improvements.

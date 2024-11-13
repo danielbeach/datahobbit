@@ -14,3 +14,5 @@ rand = "0.8"
 anyhow = "1.0.91"
 indicatif = "0.17.8"
 pyo3 = { version = "0.22.5", features = ["extension-module"] }
+parquet = "53.2.0"
+arrow = "53.2.0"
