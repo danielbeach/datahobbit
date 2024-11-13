@@ -1,7 +1,3 @@
-Here's an updated version of the README to include Parquet support:
-
----
-
 # datahobbit - CSV or Parquet Generator
 
 A Rust command-line tool that generates CSV or Parquet files with synthetic data based on a provided JSON schema. It supports custom delimiters for CSV, displays a progress bar during generation, and efficiently handles large datasets using parallel processing.
@@ -62,11 +58,12 @@ ARGS:
     <output>    Sets the output file (either .csv or .parquet)
 
 OPTIONS:
-    -d, --delimiter <DELIMITER>    Sets the delimiter to use in the CSV file (default is ',')
-    -h, --help                     Print help information
-    -r, --records <RECORDS>        Sets the number of records to generate
-    --format <FORMAT>              Sets the output format: either "csv" or "parquet" (default is "csv")
-    -V, --version                  Print version information
+    -d, --delimiter <DELIMITER>       Sets the delimiter to use in the CSV file (default is ',')
+    -h, --help                        Print help information
+    -r, --records <RECORDS>           Sets the number of records to generate
+    --format <FORMAT>                 Sets the output format: either "csv" or "parquet" (default is "csv")
+    --max-file-size <MAX_FILE_SIZE>   Sets the maximum file size for Parquet files in bytes (default is 512 MB)
+    -V, --version                     Print version information
 ```
 
 ### Schema Definition
@@ -107,6 +104,15 @@ cargo run -- schema.json output.parquet --records 100000 --format parquet
 
 - Generates 100,000 records.
 - Outputs data in Parquet format.
+
+**Generate a Parquet File with Custom Size Limit**
+
+```bash
+cargo run -- input_schema.json output.parquet --records 1000000 --format parquet --max-file-size 10485760
+```
+Generates 1,000,000 records.
+Outputs data in Parquet format.
+Uses a maximum file size of 10 MB, creating additional files as needed.
 
 **Generate a CSV with a Custom Delimiter**
 

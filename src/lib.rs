@@ -17,8 +17,8 @@ use arrow::array::{ArrayRef, BooleanArray, Float64Array, Int64Array, StringArray
 use arrow::record_batch::RecordBatch;
 use parquet::arrow::arrow_writer::ArrowWriter;
 use parquet::file::properties::WriterProperties;
-use parquet::file::writer::SerializedFileWriter;
-use parquet::schema::types::Type;
+use std::fs::metadata;
+
 
 #[derive(Deserialize)]
 struct Schema {
@@ -49,7 +49,10 @@ fn get_generator(data_type: &str) -> Result<Box<dyn Fn() -> String + Send + Sync
     }
 }
 
-pub fn generate_parquet(input_file: &str, output_file: &str, records: usize) -> Result<()> {
+const MAX_ROW_GROUPS_PER_FILE: usize = 32767;
+const DEFAULT_BATCH_SIZE: usize = 5000; // Adjusted batch size
+
+pub fn generate_parquet(input_file: &str, output_prefix: &str, records: usize, max_file_size: usize) -> Result<()> {
     let file = File::open(input_file)?;
     let reader = std::io::BufReader::new(file);
     let schema: Schema = serde_json::from_reader(reader)?;
@@ -66,37 +69,60 @@ pub fn generate_parquet(input_file: &str, output_file: &str, records: usize) -> 
         .collect::<Result<Vec<_>>>()?;
 
     let arrow_schema = Arc::new(arrow::datatypes::Schema::new(arrow_fields));
-    let file = File::create(output_file)?;
-    let buf_writer = BufWriter::new(file);
-    let writer_props = WriterProperties::builder().build();
-    let mut writer = ArrowWriter::try_new(buf_writer, arrow_schema.clone(), Some(writer_props))?;
-
     let generators: Vec<_> = schema.columns.iter()
         .map(|column| get_generator(&column.data_type))
         .collect::<Result<_>>()?;
 
-    let mut batches = Vec::new();
+    let mut file_index = 0;
+    let mut record_counter = 0;
 
-    for _ in 0..records {
-        let row: Vec<String> = generators.iter().map(|gen| gen()).collect();
-        let columns: Vec<ArrayRef> = row.iter().enumerate().map(|(i, value)| {
-            match schema.columns[i].data_type.as_str() {
-                "integer" => Arc::new(Int64Array::from(vec![value.parse::<i64>().unwrap()])) as ArrayRef,
-                "float" => Arc::new(Float64Array::from(vec![value.parse::<f64>().unwrap()])) as ArrayRef,
-                "boolean" => Arc::new(BooleanArray::from(vec![value == "true"])) as ArrayRef,
-                _ => Arc::new(StringArray::from(vec![value.to_string()])) as ArrayRef,
+    while record_counter < records {
+        let output_file = format!("{}_{}.parquet", output_prefix, file_index);
+        let file = File::create(&output_file)?;
+        let buf_writer = BufWriter::new(file);
+        let writer_props = WriterProperties::builder().build();
+        let mut writer = ArrowWriter::try_new(buf_writer, arrow_schema.clone(), Some(writer_props))?;
+
+        let mut current_file_size = 0;
+        let mut row_group_count = 0;
+
+        while record_counter < records && row_group_count < MAX_ROW_GROUPS_PER_FILE {
+            let batch_size = std::cmp::min(DEFAULT_BATCH_SIZE, records - record_counter);
+            let mut rows: Vec<Vec<String>> = Vec::with_capacity(batch_size);
+
+            for _ in 0..batch_size {
+                let row: Vec<String> = generators.iter().map(|gen| gen()).collect();
+                rows.push(row);
             }
-        }).collect();
 
-        let batch = RecordBatch::try_new(arrow_schema.clone(), columns)?;
-        batches.push(batch);
+            let columns: Vec<ArrayRef> = (0..schema.columns.len()).map(|i| {
+                let values: Vec<String> = rows.iter().map(|row| row[i].clone()).collect();
+                match schema.columns[i].data_type.as_str() {
+                    "integer" => Arc::new(Int64Array::from(values.iter().map(|v| v.parse::<i64>().unwrap()).collect::<Vec<_>>())) as ArrayRef,
+                    "float" => Arc::new(Float64Array::from(values.iter().map(|v| v.parse::<f64>().unwrap()).collect::<Vec<_>>())) as ArrayRef,
+                    "boolean" => Arc::new(BooleanArray::from(values.iter().map(|v| v == "true").collect::<Vec<_>>())) as ArrayRef,
+                    _ => Arc::new(StringArray::from(values)) as ArrayRef,
+                }
+            }).collect();
+
+            let batch = RecordBatch::try_new(arrow_schema.clone(), columns)?;
+            writer.write(&batch)?;
+
+            record_counter += batch_size;
+            row_group_count += 1;
+
+            writer.flush()?;
+            current_file_size = metadata(&output_file)?.len() as usize;
+
+            if current_file_size >= max_file_size || row_group_count >= MAX_ROW_GROUPS_PER_FILE {
+                break;
+            }
+        }
+
+        writer.close()?;
+        file_index += 1;
     }
 
-    for batch in batches {
-        writer.write(&batch)?;
-    }
-
-    writer.close()?;
     Ok(())
 }
 

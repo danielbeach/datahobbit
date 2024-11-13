@@ -12,7 +12,7 @@ struct Cli {
     /// Sets the input JSON schema file
     input: String,
 
-    /// Sets the output file
+    /// Sets the output file prefix
     output: String,
 
     /// Sets the number of records to generate
@@ -26,6 +26,10 @@ struct Cli {
     /// Output format: either "csv" or "parquet"
     #[arg(long, default_value = "csv")]
     format: String,
+
+    /// Sets the maximum file size for Parquet files (in bytes)
+    #[arg(long, default_value_t = 100 * 1024 * 1024)] // 100 MB default
+    max_file_size: usize,
 }
 
 fn main() {
@@ -39,7 +43,7 @@ fn main() {
 
     let result = match args.format.as_str() {
         "csv" => generate_csv(&args.input, &args.output, args.records, args.delimiter as u8),
-        "parquet" => generate_parquet(&args.input, &args.output, args.records),
+        "parquet" => generate_parquet(&args.input, &args.output, args.records, args.max_file_size),
         _ => Err(anyhow::anyhow!("Unsupported format: {}", args.format)),
     };
 
