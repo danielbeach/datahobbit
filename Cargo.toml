@@ -3,10 +3,6 @@ name = "csv_generator"
 version = "1.0.0"
 edition = "2021"
 
-[lib]
-name = "datahobbit"
-crate-type = ["cdylib"]
-
 [dependencies]
 clap = { version = "4.3", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
