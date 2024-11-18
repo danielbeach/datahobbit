@@ -1,0 +1,29 @@
+[build-system]
+requires = ["maturin>=1.6,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "datahobbit"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dynamic = ["version"]
+dependencies = ["typer"]
+
+[project.optional-dependencies]
+dev = ["ruff"]
+
+[project.scripts]
+datahobbit = "datahobbit.app:entry_point"
+
+[tool.ruff]
+line-length = 120
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+python-source = "python"
+module-name = "datahobbit.native"
+
