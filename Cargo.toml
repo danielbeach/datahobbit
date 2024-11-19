@@ -1,5 +1,5 @@
 [package]
-name = "csv_generator"
+name = "datahobbit"
 description = "A tool that generates CSV or Parquet files with synthetic data based on a provided JSON schema"
 version = "1.0.0"
 edition = "2021"
