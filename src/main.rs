@@ -1,5 +1,7 @@
+mod csv_generators;
+
 use clap::Parser;
-use csv_generator::{generate_csv, generate_parquet};
+use crate::csv_generators::{generate_csv, generate_parquet};
 
 #[derive(Parser)]
 #[command(
