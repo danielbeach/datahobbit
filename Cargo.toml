@@ -1,7 +1,9 @@
 [package]
 name = "csv_generator"
+description = "A tool that generates CSV or Parquet files with synthetic data based on a provided JSON schema"
 version = "1.0.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [lib]
 name = "datahobbit"
