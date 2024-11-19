@@ -46,7 +46,7 @@ To build and run the CSV and Parquet Generator, you need to have [Rust](https://
 3. **Cargo**
 
   ```bash
-  cargo add csv_generator
+  cargo add datahobbit
   ```
 
 ## Usage
