@@ -43,6 +43,12 @@ To build and run the CSV and Parquet Generator, you need to have [Rust](https://
 
    This will create an executable in the `target/release` directory.
 
+3. **Cargo**
+
+  ```bash
+  cargo add csv_generator
+  ```
+
 ## Usage
 
 ### Command-Line Options
